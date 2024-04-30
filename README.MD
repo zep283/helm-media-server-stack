@@ -1,5 +1,5 @@
 ## Media Server Stack Helm Install
-` helm upgrade --install mss ./ --values values.yaml --namespace media-server`
+` helm upgrade --install mss . --values values.yaml --namespace media-server`
 
 ## GPU Transcoding Enable
 1. helm repo add nfd https://kubernetes-sigs.github.io/node-feature-discovery/charts
