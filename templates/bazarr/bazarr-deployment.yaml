@@ -1,0 +1,81 @@
+{{- if .Values.bazarr.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.bazarr.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.bazarr.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-server-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.bazarr.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-server-stack.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.bazarr.name }}
+    spec:
+      {{- with .Values.bazarr.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.bazarr.serviceAccount.name }}
+      volumes:
+        {{- range .Values.bazarr.storage.volumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+        {{- end }}
+      securityContext:
+        {{- toYaml .Values.bazarr.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.bazarr.securityContext | nindent 12 }}
+          image: "{{ .Values.bazarr.image.repository }}:{{ .Values.bazarr.image.tag | default .Chart.AppVersion }}"
+          {{- if $.Values.bazarr.env }}
+          env:
+            {{- range $key, $value := $.Values.bazarr.env }}
+            - name: {{ $value.name }}
+              value: {{ $value.value | quote }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.bazarr.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.bazarr.service.port }}
+              protocol: TCP
+          volumeMounts:
+            {{- range .Values.bazarr.storage.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+              subPath: {{ .subPath | quote }}
+            {{- end }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.bazarr.resources | nindent 12 }}
+      {{- with .Values.bazarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bazarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.bazarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

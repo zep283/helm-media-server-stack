@@ -1,0 +1,81 @@
+{{- if .Values.jackett.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.jackett.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.jackett.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-server-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.jackett.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-server-stack.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.jackett.name }}
+    spec:
+      {{- with .Values.jackett.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.jackett.serviceAccount.name }}
+      volumes:
+        {{- range .Values.jackett.storage.volumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+        {{- end }}
+      securityContext:
+        {{- toYaml .Values.jackett.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.jackett.securityContext | nindent 12 }}
+          image: "{{ .Values.jackett.image.repository }}:{{ .Values.jackett.image.tag | default .Chart.AppVersion }}"
+          {{- if $.Values.jackett.env }}
+          env:
+            {{- range $key, $value := $.Values.jackett.env }}
+            - name: {{ $value.name }}
+              value: {{ $value.value | quote }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.jackett.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.jackett.service.port }}
+              protocol: TCP
+          volumeMounts:
+            {{- range .Values.jackett.storage.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+              subPath: {{ .subPath | quote }}
+            {{- end }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.jackett.resources | nindent 12 }}
+      {{- with .Values.jackett.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.jackett.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.jackett.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

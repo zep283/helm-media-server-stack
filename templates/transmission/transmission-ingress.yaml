@@ -1,0 +1,41 @@
+{{- if .Values.transmission.ingress.enabled -}}
+{{- $servicename := .Values.transmission.name -}}
+{{- $port := .Values.transmission.service.port -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.transmission.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+  {{- with .Values.transmission.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.transmission.ingress.className }}
+  {{- if .Values.transmission.ingress.tls }}
+  tls:
+    {{- range .Values.transmission.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.transmission.ingress.hosts }}
+     - host: {{ .host }}
+       http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $servicename }}
+                port:
+                  number: {{ $port }}
+          {{- end }}
+    {{- end }}
+{{- end }}

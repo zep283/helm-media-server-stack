@@ -1,0 +1,33 @@
+{{- if .Values.transmission.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.transmission.name }}-peer
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.transmission.service.type }}
+  ports:
+    - port: {{ .Values.transmission.service.peerPort }}
+      targetPort: {{ .Values.transmission.service.peerPort }}
+      protocol: TCP
+      name: http-peer
+  selector:
+    app: {{ .Values.transmission.name }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.transmission.name }}-peer
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.transmission.service.type }}
+  ports:
+    - port: {{ .Values.transmission.service.peerPort }}
+      targetPort: {{ .Values.transmission.service.peerPort }}
+      protocol: UDP
+      name: udp
+  selector:
+    app: {{ .Values.transmission.name }}
+{{- end }}
+

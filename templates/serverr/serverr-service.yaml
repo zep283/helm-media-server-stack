@@ -1,0 +1,18 @@
+{{- if .Values.serverr.enabled -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serverr.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.serverr.service.type }}
+  ports:
+    - port: {{ .Values.serverr.service.port }}
+      targetPort: http
+      nodePort: {{ .Values.serverr.service.nodePort }}
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ .Values.serverr.name }}
+{{- end }}

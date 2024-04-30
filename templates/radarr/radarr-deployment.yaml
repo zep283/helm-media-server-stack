@@ -1,0 +1,81 @@
+{{- if .Values.radarr.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.radarr.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.radarr.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-server-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.radarr.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-server-stack.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.radarr.name }}
+    spec:
+      {{- with .Values.radarr.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.radarr.serviceAccount.name }}
+      volumes:
+        {{- range .Values.radarr.storage.volumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+        {{- end }}
+      securityContext:
+        {{- toYaml .Values.radarr.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.radarr.securityContext | nindent 12 }}
+          image: "{{ .Values.radarr.image.repository }}:{{ .Values.radarr.image.tag | default .Chart.AppVersion }}"
+          {{- if $.Values.radarr.env }}
+          env:
+            {{- range $key, $value := $.Values.radarr.env }}
+            - name: {{ $value.name }}
+              value: {{ $value.value | quote }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.radarr.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.radarr.service.port }}
+              protocol: TCP
+          volumeMounts:
+            {{- range .Values.radarr.storage.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+              subPath: {{ .subPath | quote }}
+            {{- end }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.radarr.resources | nindent 12 }}
+      {{- with .Values.radarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.radarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.radarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

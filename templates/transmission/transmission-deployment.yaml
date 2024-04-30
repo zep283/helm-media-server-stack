@@ -1,0 +1,109 @@
+{{- if .Values.transmission.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.transmission.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.transmission.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-server-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.transmission.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-server-stack.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.transmission.name }}
+    spec:
+      {{- with .Values.transmission.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.transmission.serviceAccount.name }}
+      volumes:
+        {{- range .Values.transmission.storage.volumes }}
+        - name: {{ .name }}
+          {{- if .persistentVolumeClaim }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+          {{- end }}
+          {{- if .secret }}
+          secret:
+            secretName: {{ .secret.secretName }}
+          {{- end }}
+          {{- if .configMap }}
+          configMap:
+            name: {{ .configMap.name }}
+            defaultMode: 0700 
+            items:
+            {{- range .configMap.items }}
+            - key: {{ .key }}
+              path: {{ .path }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+      securityContext:
+        {{- toYaml .Values.transmission.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.transmission.securityContext | nindent 12 }}
+          image: "{{ .Values.transmission.image.repository }}:{{ .Values.transmission.image.tag | default .Chart.AppVersion }}"
+          {{- if $.Values.transmission.env }}
+          env:
+            {{- range $key, $value := $.Values.transmission.env }}
+            - name: {{ $value.name }}
+              value: {{ $value.value | quote }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.transmission.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.transmission.service.port }}
+              protocol: TCP
+            - name: peer
+              containerPort: {{ .Values.transmission.service.peerPort }}
+              protocol: TCP
+          volumeMounts:
+            {{- range .Values.transmission.storage.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+              subPath: {{ .subPath | quote }}
+            {{- end }}
+          livenessProbe:
+            exec:
+              command:
+              - ping
+              - google.com
+              - -c
+              - "1"
+            initialDelaySeconds: 1
+            periodSeconds: 900
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.transmission.resources | nindent 12 }}
+      {{- with .Values.transmission.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.transmission.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.transmission.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

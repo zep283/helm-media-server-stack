@@ -1,0 +1,81 @@
+{{- if .Values.sonarr.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.sonarr.name }}
+  labels:
+    {{- include "media-server-stack.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.sonarr.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "media-server-stack.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.sonarr.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "media-server-stack.selectorLabels" . | nindent 8 }}
+        app: {{ .Values.sonarr.name }}
+    spec:
+      {{- with .Values.sonarr.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ .Values.sonarr.serviceAccount.name }}
+      volumes:
+        {{- range .Values.sonarr.storage.volumes }}
+        - name: {{ .name }}
+          persistentVolumeClaim:
+            claimName: {{ .persistentVolumeClaim.claimName }}
+        {{- end }}
+      securityContext:
+        {{- toYaml .Values.sonarr.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.sonarr.securityContext | nindent 12 }}
+          image: "{{ .Values.sonarr.image.repository }}:{{ .Values.sonarr.image.tag | default .Chart.AppVersion }}"
+          {{- if $.Values.sonarr.env }}
+          env:
+            {{- range $key, $value := $.Values.sonarr.env }}
+            - name: {{ $value.name }}
+              value: {{ $value.value | quote }}
+            {{- end }}
+          {{- end }}
+          imagePullPolicy: {{ .Values.sonarr.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.sonarr.service.port }}
+              protocol: TCP
+          volumeMounts:
+            {{- range .Values.sonarr.storage.volumeMounts }}
+            - mountPath: {{ .mountPath }}
+              name: {{ .name }}
+              subPath: {{ .subPath | quote }}
+            {{- end }}
+          # livenessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          # readinessProbe:
+          #   httpGet:
+          #     path: /
+          #     port: http
+          resources:
+            {{- toYaml .Values.sonarr.resources | nindent 12 }}
+      {{- with .Values.sonarr.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sonarr.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.sonarr.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

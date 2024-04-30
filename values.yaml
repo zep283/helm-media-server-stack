@@ -1,0 +1,635 @@
+transmission:
+  name: transmission
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: haugene/transmission-openvpn
+    pullPolicy: Always
+    tag: 3.3
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: CREATE_TUN_DEVICE
+      value: true
+    - name: OPENVPN_PROVIDER
+      value: PIA
+    - name: OPENVPN_USERNAME
+      value: '**None**'
+    - name: OPENVPN_PASSWORD
+      value: '**None**' 
+    - name: WEBPROXY_ENABLED
+      value: false
+    - name: TRANSMISSION_DOWNLOAD_DIR
+      value: /mnt/data/main
+    - name: TRANSMISSION_HOME 
+      value: /mnt/data/config
+    - name: TRANSMISSION_IDLE_SEEDING_LIMIT_ENABLED
+      value: false
+    - name: TRANSMISSION_SEED_QUEUE_ENABLED
+      value: false
+    - name: TRANSMISSION_DOWNLOAD_QUEUE_ENABLED
+      value: false
+    - name: TRANSMISSION_INCOMPLETE_DIR_ENABLED
+      value: false
+    - name: TRANSMISSION_RATIO_LIMIT_ENABLED
+      value: true
+    - name: TRANSMISSION_RATIO_LIMIT
+      value: 2
+    - name: TRANSMISSION_PEER_PORT 
+      value: 51423
+    - name: GLOBAL_APPLY_PERMISSIONS
+      value: false
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+  securityContext:
+    capabilities:
+      add:
+        - NET_ADMIN
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  service:
+    type: ClusterIP
+    port: 9091
+    peerPort: 51413
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: transmission.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config/openvpn-credentials.txt
+      name: main
+      subPath: config/transmission/openvpn-credentials.txt
+    - mountPath: /mnt/data/config
+      name: config
+      subPath: transmission
+    volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
+radarr:
+  name: radarr
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: linuxserver/radarr
+    pullPolicy: Always
+    tag: latest
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: TZ
+      value: America/Los_Angeles
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  service:
+    type: ClusterIP
+    port: 7878
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: radarr.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config
+      name: config
+      subPath: radarr
+    volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
+sonarr:
+  name: sonarr
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: linuxserver/sonarr
+    pullPolicy: Always
+    tag: latest
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: TZ
+      value: America/Los_Angeles
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  service:
+    type: ClusterIP
+    port: 8989
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: sonarr.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config
+      name: config
+      subPath: sonarr
+    volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
+jackett:
+  name: jackett
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: linuxserver/jackett
+    pullPolicy: Always
+    tag: latest
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: TZ
+      value: America/Los_Angeles
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  service:
+    type: ClusterIP
+    port: 9117
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: jackett.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config
+      name: config
+      subPath: jackett
+    volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
+bazarr:
+  name: bazarr
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: linuxserver/bazarr
+    pullPolicy: Always
+    tag: latest
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: TZ
+      value: America/Los_Angeles
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext: {}
+    # fsGroup: 2000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  service:
+    type: ClusterIP
+    port: 6767
+  ingress:
+    enabled: true
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: bazarr.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config
+      name: config
+      subPath: bazarr
+    volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
+serverr:
+  name: jellyfin
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: linuxserver/jellyfin
+    pullPolicy: Always
+    tag: latest
+  imagePullSecrets: []
+  env:
+    - name: PUID
+      value: 1000
+    - name: PGID
+      value: 1000
+    - name: TZ
+      value: America/Los_Angeles
+    - name: JELLYFIN_PublishedServerUrl
+      value: jellyfin.home.cloud.org
+  serviceAccount:
+    # Specifies whether a service account should be created
+    create: false
+    # Annotations to add to the service account
+    annotations: {}
+    # The name of the service account to use.
+    # If not set and create is true, a name is generated using the fullname template
+    name: ""
+  podAnnotations: {}
+  podSecurityContext:
+    supplementalGroups:
+    - 44
+    - 106
+    # fsGroup: 2000
+    # capabilities:
+    #   drop:
+    #   - ALL
+    # readOnlyRootFilesystem: true
+    #runAsNonRoot: false
+    #runAsUser: 0
+  securityContext: 
+    privileged: true
+  service:
+    type: NodePort
+    port: 8096
+    nodePort: 32169
+  ingress:
+    enabled: true
+    #className: nginx
+    annotations:
+      kubernetes.io/ingress.class: "traefik"
+      cert-manager.io/cluster-issuer: letsencrypt-staging
+      acme.cert-manager.io/http01-edit-in-place: "true"
+      #kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+      - host: jellyfin.home.cloud.org
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - hosts:
+        - jellyfin.home.cloud.org
+        secretName: jf-tls
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1 
+          preference:
+            matchExpressions:
+            - key: kubernetes.io/node.type
+              operator: In
+              values:
+              - high-perf
+
+  storage: 
+    volumeMounts:
+    - mountPath: /mnt/data/main
+      name: main
+    - mountPath: /mnt/data/ext-drive1
+      name: ext-drive1
+    # - mountPath: /mnt/data/ext-drive2
+    #   name: ext-drive2
+    - mountPath: /config
+      name: config
+      subPath: jellyfin
+    - name: render-device
+      mountPath: /dev/dri/renderD128
+    - name: card-device
+      mountPath: /dev/dri/card0
+    volumes:
+    - name: render-device
+      persistentVolumeClaim:
+        claimName: render-device-pvc
+    - name: card-device
+      persistentVolumeClaim:
+        claimName: card-device-pvc
+    - name: config
+      persistentVolumeClaim:
+        claimName: config-pvc
+    - name: main
+      persistentVolumeClaim:
+        claimName: main-nas-pvc
+    - name: ext-drive1
+      persistentVolumeClaim:
+        claimName: external-drive1-pvc
+    # - name: ext-drive2
+    #   persistentVolumeClaim:
+    #     claimName: external-drive2-pvc
