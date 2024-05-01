@@ -523,9 +523,9 @@ serverr:
   imagePullSecrets: []
   env:
     - name: PUID
-      value: 1000
+      value: 0
     - name: PGID
-      value: 1000
+      value: 226
     - name: TZ
       value: America/Los_Angeles
     - name: JELLYFIN_PublishedServerUrl
@@ -539,10 +539,7 @@ serverr:
     # If not set and create is true, a name is generated using the fullname template
     name: ""
   podAnnotations: {}
-  podSecurityContext:
-    supplementalGroups:
-    - 44
-    - 106
+  podSecurityContext: {}
     # fsGroup: 2000
     # capabilities:
     #   drop:
