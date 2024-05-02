@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: external-drive1-pvc
+  namespace: media-server
+spec:
+  storageClassName: ""
+  volumeName: external-drive1-media-server-pv
+  accessModes:
+   - ReadWriteOnce 
+  resources:
+    requests:
+      storage: 930Gi
