@@ -1,3 +1,6 @@
+# Medium Article
+Full setup guide [here](https://medium.com/@zep283/kubernetes-hardware-accelerated-home-streamer-a2b12104e24e?source=rss-8f1469682ad5------2)
+
 ## Media Server Stack Helm Install
 ` helm upgrade --install mss . --values values.yaml --namespace media-server`
 
